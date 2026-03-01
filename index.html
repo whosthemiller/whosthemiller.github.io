@@ -193,7 +193,7 @@
         }, COLON_BREAK_MS);
 
         getAllImageUrls().then(function (photoSrcs) {
-          var urls = IMAGES_TO_PRELOAD.concat(photoSrcs);
+          var urls = IMAGES_TO_PRELOAD;
           return preloadImages(urls);
         }).then(function () {
           preloadDone = true;
@@ -229,6 +229,7 @@
           var img = document.createElement('img');
           img.className = 'comp-img';
           img.alt = '';
+          img.loading = 'lazy';
           img.onerror = function () { this.style.display = 'none'; };
           imgPool.push(img);
           if (container) container.appendChild(img);
