@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhosTheMiller</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext x='16' y='26' font-family='Bricolage Grotesque, sans-serif' font-size='28' font-weight='700' fill='%232a2a2a' text-anchor='middle'%3E%3A%29%3C/text%3E%3C/svg%3E">
+  <meta property="og:title" content="WhosTheMiller">
+  <meta property="og:description" content="Portfolio still in development. Meanwhile: Stalk me here · Explore the current version.">
+  <meta property="og:image" content="og-image.png">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: auto;
+      background: #f5f5f0;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* Grid compositions – images under text */
+    #grid-compositions {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      transition: opacity 0.06s ease-out;
+    }
+
+    #grid-compositions.fade-out {
+      opacity: 0;
+    }
+
+    #grid-compositions .comp-img {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      object-position: center;
+    }
+
+    #content {
+      position: relative;
+      z-index: 1;
+      padding: 1.5rem 2rem;
+      font-weight: 700;
+      font-size: 3rem;
+      line-height: 1.6;
+      color: #f5f5f0;
+      mix-blend-mode: difference;
+      opacity: 0;
+      transition: opacity 0.6s ease-out;
+    }
+
+    #content:has(a:hover) {
+      mix-blend-mode: normal;
+      color: #2a2a2a;
+    }
+
+    #content.visible {
+      opacity: 1;
+    }
+
+    #content a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    #content a:hover {
+      color: #0000ff;
+    }
+
+    #content .meanwhile {
+      font-size: 1.5rem;
+      line-height: 1;
+      display: block;
+    }
+
+    #content .meanwhile .line {
+      display: block;
+      margin-bottom: 0.2em;
+    }
+
+    #content .meanwhile .line:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Loader – full screen until ready */
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f0;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      color: #2a2a2a;
+      letter-spacing: 0.05em;
+      transition: opacity 0.6s ease-out;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Smooth leave transition when clicking explore / external links */
+    body.leaving #grid-compositions,
+    body.leaving #content {
+      opacity: 0;
+      transition: opacity 0.4s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">:</div>
+  <div id="grid-compositions" aria-hidden="true"></div>
+  <div id="content">
+    Portfolio still in development :)<br><br>
+    <span class="meanwhile"><span class="line">Meanwhile:</span>
+    <span class="line">→ <a href="https://www.instagram.com/whosthemiller/" id="stalk">Stalk me here</a></span>
+    <span class="line">→ <a href="https://whosthemiller.myportfolio.com/work" id="finished">Explore the current version</a></span></span>
+  </div>
+  <script>
+    (function () {
+      var loaderEl = document.getElementById('loader');
+      var content = document.getElementById('content');
+      var PAUSE_MS = 800;
+      var MAX_COLONS = 8;
+      var COLON_BREAK_MS = 120;
+
+      var IMAGES_TO_PRELOAD = [
+        'og-image.png'
+      ];
+
+      function preloadImages(urls) {
+        return Promise.all(urls.map(function (url) {
+          return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = resolve;
+            img.onerror = resolve;
+            img.src = url;
+          });
+        }));
+      }
+
+      function getAllImageUrls() {
+        return fetch('data/photos.index.json')
+          .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+          .then(function (data) {
+            var photos = (data && data.photos) ? data.photos : [];
+            return photos.map(function (p) { return p.src; }).filter(Boolean);
+          })
+          .catch(function () { return []; });
+      }
+
+      function showContent() {
+        if (loaderEl) loaderEl.textContent = (loaderEl ? loaderEl.textContent : ':') + ')';
+        setTimeout(function () {
+          if (loaderEl) loaderEl.classList.add('hidden');
+          if (content) content.classList.add('visible');
+        }, PAUSE_MS);
+      }
+
+      function init() {
+        var displayedColons = 0;
+        var preloadDone = false;
+
+        var tick = setInterval(function () {
+          if (displayedColons < MAX_COLONS) {
+            displayedColons++;
+            if (loaderEl) loaderEl.textContent = ':'.repeat(displayedColons);
+          }
+          if (preloadDone && displayedColons >= MAX_COLONS) {
+            clearInterval(tick);
+            showContent();
+          }
+        }, COLON_BREAK_MS);
+
+        getAllImageUrls().then(function (photoSrcs) {
+          var urls = IMAGES_TO_PRELOAD.concat(photoSrcs);
+          return preloadImages(urls);
+        }).then(function () {
+          preloadDone = true;
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+
+    (function () {
+      var GRID_COLS = 10;
+      var GRID_ROWS = 8;
+      var IMG_SIZE = 100;
+      var IMG_GAP = 12;
+      var EDGE_MARGIN = 20;
+      var MIN_IMAGES = 3;
+      var MAX_IMAGES = 7;
+
+      var container = document.getElementById('grid-compositions');
+      var photoList = [];
+      var lastCellId = null;
+      var IMG_POOL_SIZE = 7;
+      var imgPool = [];
+      var transitionTimeout = null;
+
+      function ensureImgPool() {
+        if (imgPool.length >= IMG_POOL_SIZE) return;
+        for (var i = imgPool.length; i < IMG_POOL_SIZE; i++) {
+          var img = document.createElement('img');
+          img.className = 'comp-img';
+          img.alt = '';
+          img.onerror = function () { this.style.display = 'none'; };
+          imgPool.push(img);
+          if (container) container.appendChild(img);
+        }
+      }
+
+      function getCellId(clientX, clientY) {
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        if (w <= 0 || h <= 0) return 0;
+        var cellX = Math.floor((clientX / w) * GRID_COLS);
+        var cellY = Math.floor((clientY / h) * GRID_ROWS);
+        cellX = Math.max(0, Math.min(GRID_COLS - 1, cellX));
+        cellY = Math.max(0, Math.min(GRID_ROWS - 1, cellY));
+        return cellY * GRID_COLS + cellX;
+      }
+
+      function sample(arr, n) {
+        var copy = arr.slice();
+        var out = [];
+        for (var i = 0; i < n && copy.length > 0; i++) {
+          var j = Math.floor(Math.random() * copy.length);
+          out.push(copy[j]);
+          copy.splice(j, 1);
+        }
+        return out;
+      }
+
+      function renderComposition() {
+        if (!container || photoList.length === 0) return;
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var innerW = Math.max(0, w - 2 * EDGE_MARGIN);
+        var innerH = Math.max(0, h - 2 * EDGE_MARGIN);
+        var cellSize = IMG_SIZE + IMG_GAP;
+        var cols = Math.max(1, Math.floor(innerW / cellSize));
+        var rows = Math.max(1, Math.floor(innerH / cellSize));
+        var maxLeft = Math.max(0, w - IMG_SIZE - EDGE_MARGIN);
+        var maxTop = Math.max(0, h - IMG_SIZE - EDGE_MARGIN);
+        var totalCells = cols * rows;
+
+        var count = MIN_IMAGES + Math.floor(Math.random() * (MAX_IMAGES - MIN_IMAGES + 1));
+        count = Math.min(count, photoList.length, totalCells);
+        count = Math.min(totalCells, Math.max(MIN_IMAGES, count));
+
+        var chosen = sample(photoList, count);
+
+        var leftColumnIndices = [];
+        var otherIndices = [];
+        for (var c = 0; c < totalCells; c++) {
+          var col = c % cols;
+          if (col < 2) leftColumnIndices.push(c);
+          else otherIndices.push(c);
+        }
+        for (var i = otherIndices.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = otherIndices[i];
+          otherIndices[i] = otherIndices[j];
+          otherIndices[j] = tmp;
+        }
+        for (var i = leftColumnIndices.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = leftColumnIndices[i];
+          leftColumnIndices[i] = leftColumnIndices[j];
+          leftColumnIndices[j] = tmp;
+        }
+        var leftCount = Math.min(2, leftColumnIndices.length, count);
+        var cellIndices = leftColumnIndices.slice(0, leftCount).concat(otherIndices.slice(0, count - leftCount));
+
+        ensureImgPool();
+
+        for (var i = 0; i < IMG_POOL_SIZE; i++) {
+          var img = imgPool[i];
+          if (i < chosen.length) {
+            var idx = cellIndices[i];
+            var cellCol = idx % cols;
+            var cellRow = Math.floor(idx / cols);
+            var left = Math.min(EDGE_MARGIN + cellCol * cellSize, maxLeft);
+            var top = Math.min(EDGE_MARGIN + cellRow * cellSize, maxTop);
+
+            img.src = chosen[i];
+            img.style.left = left + 'px';
+            img.style.top = top + 'px';
+            img.style.display = '';
+          } else {
+            img.style.display = 'none';
+          }
+        }
+      }
+
+      function onMouseMove(e) {
+        var cellId = getCellId(e.clientX, e.clientY);
+        if (cellId !== lastCellId) {
+          lastCellId = cellId;
+          if (transitionTimeout) clearTimeout(transitionTimeout);
+          if (container) container.classList.add('fade-out');
+          transitionTimeout = setTimeout(function () {
+            transitionTimeout = null;
+            renderComposition();
+            if (container) container.classList.remove('fade-out');
+          }, 60);
+        }
+      }
+
+      function onResize() {
+        lastCellId = null;
+        if (container) {
+          container.classList.remove('fade-out');
+          container.innerHTML = '';
+          imgPool = [];
+        }
+      }
+
+      function initGrid() {
+        if (!container) return;
+        fetch('data/photos.index.json')
+          .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+          .then(function (data) {
+            var photos = (data && data.photos) ? data.photos : [];
+            photoList = photos.map(function (p) { return p.src; }).filter(Boolean);
+          })
+          .catch(function () { photoList = []; })
+          .then(function () {
+            while (photoList.length < MIN_IMAGES) {
+              photoList.push('og-image.png');
+            }
+            document.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onResize);
+            renderComposition();
+          });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGrid);
+      } else {
+        initGrid();
+      }
+    })();
+
+    (function () {
+      var LEAVE_DURATION_MS = 450;
+      var exploreLink = document.getElementById('finished');
+      var stalkLink = document.getElementById('stalk');
+
+      function smoothLeave(e, link) {
+        if (!link || !link.href || link.target === '_blank') return;
+        e.preventDefault();
+        document.body.classList.add('leaving');
+        setTimeout(function () {
+          window.location.href = link.href;
+        }, LEAVE_DURATION_MS);
+      }
+
+      if (exploreLink) {
+        exploreLink.addEventListener('click', function (e) { smoothLeave(e, exploreLink); });
+      }
+      if (stalkLink) {
+        stalkLink.addEventListener('click', function (e) { smoothLeave(e, stalkLink); });
+      }
+    })();
+  </script>
+</body>
+</html>
