@@ -145,6 +145,7 @@
       var COLON_BREAK_MS = 120;
 
       var IMAGES_TO_PRELOAD = [
+        // og-image.png used for social preview; optional
         'og-image.png'
       ];
 
@@ -353,8 +354,9 @@
           })
           .catch(function () { photoList = []; })
           .then(function () {
+            var fallback = 'data:image/gif;base64,R0lGOODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             while (photoList.length < MIN_IMAGES) {
-              photoList.push('og-image.png');
+              photoList.push(fallback);
             }
             document.addEventListener('mousemove', onMouseMove);
             window.addEventListener('resize', onResize);
