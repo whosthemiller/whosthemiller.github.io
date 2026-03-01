@@ -133,8 +133,8 @@
   <div id="content">
     Portfolio still in development :)<br><br>
     <span class="meanwhile"><span class="line">Meanwhile:</span>
-    <span class="line">→ <a href="https://www.instagram.com/whosthemiller/" id="stalk">Stalk me here</a></span>
-    <span class="line">→ <a href="https://whosthemiller.myportfolio.com/work" id="finished">Explore the current version</a></span></span>
+    <span class="line">→ <a href="https://www.instagram.com/whosthemiller/" id="stalk" target="_blank" rel="noopener noreferrer">Stalk me here</a></span>
+    <span class="line">→ <a href="https://whosthemiller.myportfolio.com/work" id="finished" target="_blank" rel="noopener noreferrer">Explore the current version</a></span></span>
   </div>
   <script>
     (function () {
@@ -220,9 +220,13 @@
       var container = document.getElementById('grid-compositions');
       var photoList = [];
       var lastCellId = null;
+      var lastRenderX = null;
+      var lastRenderY = null;
       var IMG_POOL_SIZE = 7;
       var imgPool = [];
       var transitionTimeout = null;
+      var MIN_MOVE_PX = 12;
+      var cursorHasMoved = false;
 
       function ensureImgPool() {
         if (imgPool.length >= IMG_POOL_SIZE) return;
@@ -259,6 +263,16 @@
         return out;
       }
 
+      function cellOverlapsContent(cellCol, cellRow, contentRect, cols, rows) {
+        var cellSize = IMG_SIZE + IMG_GAP;
+        var imgLeft = EDGE_MARGIN + cellCol * cellSize;
+        var imgTop = EDGE_MARGIN + cellRow * cellSize;
+        var imgRight = imgLeft + IMG_SIZE;
+        var imgBottom = imgTop + IMG_SIZE;
+        return imgLeft < contentRect.right && imgRight > contentRect.left &&
+          imgTop < contentRect.bottom && imgBottom > contentRect.top;
+      }
+
       function renderComposition() {
         if (!container || photoList.length === 0) return;
         var w = window.innerWidth;
@@ -278,10 +292,18 @@
 
         var chosen = sample(photoList, count);
 
+        var contentRect = null;
+        if (!cursorHasMoved) {
+          var contentEl = document.getElementById('content');
+          if (contentEl) contentRect = contentEl.getBoundingClientRect();
+        }
+
         var leftColumnIndices = [];
         var otherIndices = [];
         for (var c = 0; c < totalCells; c++) {
           var col = c % cols;
+          var row = Math.floor(c / cols);
+          if (contentRect && cellOverlapsContent(col, row, contentRect, cols, rows)) continue;
           if (col < 2) leftColumnIndices.push(c);
           else otherIndices.push(c);
         }
@@ -299,6 +321,8 @@
         }
         var leftCount = Math.min(2, leftColumnIndices.length, count);
         var cellIndices = leftColumnIndices.slice(0, leftCount).concat(otherIndices.slice(0, count - leftCount));
+        count = Math.min(count, cellIndices.length);
+        chosen = chosen.slice(0, count);
 
         ensureImgPool();
 
@@ -322,9 +346,25 @@
       }
 
       function onMouseMove(e) {
+        if (!cursorHasMoved) {
+          cursorHasMoved = true;
+          if (transitionTimeout) clearTimeout(transitionTimeout);
+          if (container) container.classList.add('fade-out');
+          transitionTimeout = setTimeout(function () {
+            transitionTimeout = null;
+            renderComposition();
+            if (container) container.classList.remove('fade-out');
+          }, 60);
+          return;
+        }
         var cellId = getCellId(e.clientX, e.clientY);
-        if (cellId !== lastCellId) {
+        var dx = lastRenderX != null ? e.clientX - lastRenderX : MIN_MOVE_PX;
+        var dy = lastRenderY != null ? e.clientY - lastRenderY : MIN_MOVE_PX;
+        var movedEnough = (dx * dx + dy * dy) >= (MIN_MOVE_PX * MIN_MOVE_PX);
+        if (cellId !== lastCellId && movedEnough) {
           lastCellId = cellId;
+          lastRenderX = e.clientX;
+          lastRenderY = e.clientY;
           if (transitionTimeout) clearTimeout(transitionTimeout);
           if (container) container.classList.add('fade-out');
           transitionTimeout = setTimeout(function () {
@@ -337,6 +377,8 @@
 
       function onResize() {
         lastCellId = null;
+        lastRenderX = null;
+        lastRenderY = null;
         if (container) {
           container.classList.remove('fade-out');
           container.innerHTML = '';
