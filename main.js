@@ -74,9 +74,6 @@
   var GRID_ROWS = 8;
   var IMG_SIZE = 100;
   var MOBILE_IMG_SIZE = 260;
-  var IMG_GAP = 12;
-  var MOBILE_IMG_GAP = 28;
-  var EDGE_MARGIN = 20;
   var MIN_IMAGES = 3;
   var MAX_IMAGES = 7;
   var MOBILE_MAX_IMAGES = 5;
@@ -109,7 +106,21 @@
     }
     return w < MOBILE_LAYOUT_BREAKPOINT ? MOBILE_IMG_SIZE : IMG_SIZE;
   }
-  function getImgGap() { return window.innerWidth < MOBILE_LAYOUT_BREAKPOINT ? MOBILE_IMG_GAP : IMG_GAP; }
+  /* Match content padding: clamp(1.5rem, 4vw, 3rem) */
+  function getContentMarginPx() {
+    var w = window.innerWidth;
+    var rem = 16;
+    var minPx = 1.5 * rem;
+    var maxPx = 3 * rem;
+    var vwPx = (w * 4) / 100;
+    return Math.min(maxPx, Math.max(minPx, vwPx));
+  }
+  function getImgGap() {
+    return getContentMarginPx();
+  }
+  function getEdgeMargin() {
+    return getContentMarginPx();
+  }
   function getPoolSize() { return window.innerWidth < MOBILE_LAYOUT_BREAKPOINT ? MOBILE_IMG_POOL_SIZE : IMG_POOL_SIZE; }
   function getMaxImages() { return window.innerWidth < MOBILE_LAYOUT_BREAKPOINT ? MOBILE_MAX_IMAGES : MAX_IMAGES; }
 
@@ -156,9 +167,10 @@
   function cellOverlapsContent(cellCol, cellRow, contentRect, cols, rows) {
     var imgSize = getImgSize();
     var gap = getImgGap();
+    var edgeMargin = getEdgeMargin();
     var cellSize = imgSize + gap;
-    var imgLeft = EDGE_MARGIN + cellCol * cellSize;
-    var imgTop = EDGE_MARGIN + cellRow * cellSize;
+    var imgLeft = edgeMargin + cellCol * cellSize;
+    var imgTop = edgeMargin + cellRow * cellSize;
     var imgRight = imgLeft + imgSize;
     var imgBottom = imgTop + imgSize;
     return imgLeft < contentRect.right && imgRight > contentRect.left &&
@@ -172,14 +184,15 @@
     var maxImages = getMaxImages();
     var w = window.innerWidth;
     var h = window.innerHeight;
-    var innerW = Math.max(0, w - 2 * EDGE_MARGIN);
-    var innerH = Math.max(0, h - 2 * EDGE_MARGIN);
+    var edgeMargin = getEdgeMargin();
+    var innerW = Math.max(0, w - 2 * edgeMargin);
+    var innerH = Math.max(0, h - 2 * edgeMargin);
     var gap = getImgGap();
     var cellSize = imgSize + gap;
     var cols = Math.max(1, Math.floor(innerW / cellSize));
     var rows = Math.max(1, Math.floor(innerH / cellSize));
-    var maxLeft = Math.max(0, w - imgSize - EDGE_MARGIN);
-    var maxTop = Math.max(0, h - imgSize - EDGE_MARGIN);
+    var maxLeft = Math.max(0, w - imgSize - edgeMargin);
+    var maxTop = Math.max(0, h - imgSize - edgeMargin);
     var totalCells = cols * rows;
 
     var count = MIN_IMAGES + Math.floor(Math.random() * (maxImages - MIN_IMAGES + 1));
@@ -235,8 +248,8 @@
         var idx = cellIndices[i];
         var cellCol = idx % cols;
         var cellRow = Math.floor(idx / cols);
-        var left = Math.min(EDGE_MARGIN + cellCol * cellSizeFinal, maxLeftFinal);
-        var top = Math.min(EDGE_MARGIN + cellRow * cellSizeFinal, maxTopFinal);
+        var left = Math.min(edgeMargin + cellCol * cellSizeFinal, maxLeftFinal);
+        var top = Math.min(edgeMargin + cellRow * cellSizeFinal, maxTopFinal);
         var newSrc = chosen[i];
         var resolvedNew = '';
         try { resolvedNew = new URL(newSrc, window.location.href).href; } catch (e) {}
