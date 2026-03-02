@@ -1,0 +1,129 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: auto;
+  background: #f5f5f0;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* Grid compositions – images under text */
+#grid-compositions {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#grid-compositions .comp-img {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 1199px) {
+  #grid-compositions .comp-img {
+    width: 260px;
+    height: 260px;
+  }
+}
+
+/* Phones: image size = 1/16 of viewport (smaller dimension) */
+@media (max-width: 600px) {
+  #grid-compositions .comp-img {
+    width: calc(min(100vw, 100vh) / 16);
+    height: calc(min(100vw, 100vh) / 16);
+  }
+}
+
+#content {
+  position: relative;
+  z-index: 1;
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1.25rem, 3vw, 3rem);
+  font-weight: 700;
+  font-size: clamp(2rem, 10vw, 5.5rem);
+  line-height: 1.6;
+  color: #f5f5f0;
+  mix-blend-mode: difference;
+  opacity: 0;
+  transition: opacity 0.6s ease-out;
+}
+
+#content:has(a:hover) {
+  mix-blend-mode: normal;
+  color: #2a2a2a;
+}
+
+#content.visible {
+  opacity: 1;
+}
+
+#content a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#content a:active {
+  color: #0000ff;
+}
+
+#content .intro {
+  display: block;
+  line-height: 1.2;
+  margin-bottom: 0.35em;
+}
+
+#content .meanwhile {
+  font-size: 0.5em;
+  line-height: 1;
+  display: block;
+  margin-top: 0;
+}
+
+#content .meanwhile .line {
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+#content .meanwhile .line:last-child {
+  margin-bottom: 0;
+}
+
+/* Loader – full screen until ready */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f0;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 6vw, 3.25rem);
+  color: #2a2a2a;
+  letter-spacing: 0.05em;
+  transition: opacity 0.6s ease-out;
+}
+
+#loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Smooth leave transition when clicking explore / external links */
+body.leaving #grid-compositions,
+body.leaving #content {
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+}
