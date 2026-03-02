@@ -335,7 +335,7 @@
       stopMobileCycle();
       document.removeEventListener('touchstart', onMobileTap);
       document.removeEventListener('click', onMobileTap);
-      startDesktopCycle();
+      stopDesktopCycle();
       document.addEventListener('mousemove', onMouseMove);
     }
     if (container) {
@@ -363,7 +363,6 @@
           document.addEventListener('touchstart', onMobileTap, { passive: true });
           document.addEventListener('click', onMobileTap);
         } else {
-          startDesktopCycle();
           document.addEventListener('mousemove', onMouseMove);
         }
         window.addEventListener('resize', onResize);

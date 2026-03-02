@@ -64,6 +64,11 @@ html, body {
   color: #2a2a2a;
 }
 
+#content:has(a:hover) a:hover,
+#content:has(a:hover) a:focus-visible {
+  color: #0000ff;
+}
+
 #content.visible {
   opacity: 1;
 }
@@ -73,13 +78,18 @@ html, body {
   text-decoration: none;
 }
 
+#content a:hover,
+#content a:focus-visible {
+  color: #0000ff;
+}
+
 #content a:active {
   color: #0000ff;
 }
 
 #content .intro {
   display: block;
-  line-height: 1.2;
+  line-height: 1;
   margin-bottom: 0.35em;
 }
 
