@@ -222,80 +222,78 @@
 
     ensureImgPool();
 
-    var loadingCount = 0;
-    var visibleCount = Math.min(chosen.length, poolSize);
-    for (var i = 0; i < visibleCount; i++) {
-      var img = imgPool[i];
-      var newSrc = chosen[i];
-      var resolvedNew = '';
-      try { resolvedNew = new URL(newSrc, window.location.href).href; } catch (e) {}
-      if (!(img.src && resolvedNew && img.src === resolvedNew)) loadingCount++;
-    }
+    var maxLeftFinal = maxLeft;
+    var maxTopFinal = maxTop;
+    var cellSizeFinal = cellSize;
+    var toPreload = [];
+    var toUpdateSameSrc = [];
+    var toHide = [];
 
-    var loadedCount = 0;
-    function showAllVisible() {
-      for (var k = 0; k < poolSize; k++) {
-        if (k < chosen.length) {
-          imgPool[k].style.opacity = '1';
-        }
-      }
-    }
-    function onOneLoaded() {
-      loadedCount++;
-      if (loadedCount >= loadingCount) showAllVisible();
-    }
-
-    for (var i = 0; i < poolSize; i++) {
-      var img = imgPool[i];
-      if (i < chosen.length) {
-        var newSrc = chosen[i];
-        var resolvedNew = '';
-        try { resolvedNew = new URL(newSrc, window.location.href).href; } catch (e) {}
-        var sameSrc = (img.src && resolvedNew && img.src === resolvedNew);
-        if (!sameSrc) img.style.opacity = '0';
-      }
-    }
     for (var i = 0; i < poolSize; i++) {
       var img = imgPool[i];
       if (i < chosen.length) {
         var idx = cellIndices[i];
         var cellCol = idx % cols;
         var cellRow = Math.floor(idx / cols);
-        var left = Math.min(EDGE_MARGIN + cellCol * cellSize, maxLeft);
-        var top = Math.min(EDGE_MARGIN + cellRow * cellSize, maxTop);
-
+        var left = Math.min(EDGE_MARGIN + cellCol * cellSizeFinal, maxLeftFinal);
+        var top = Math.min(EDGE_MARGIN + cellRow * cellSizeFinal, maxTopFinal);
         var newSrc = chosen[i];
         var resolvedNew = '';
-        try {
-          resolvedNew = new URL(newSrc, window.location.href).href;
-        } catch (e) {}
+        try { resolvedNew = new URL(newSrc, window.location.href).href; } catch (e) {}
         var sameSrc = (img.src && resolvedNew && img.src === resolvedNew);
-        if (!sameSrc) {
-          img.onload = img.onerror = function () {
-            onOneLoaded();
-            this.onload = null;
-            this.onerror = null;
-          };
+        if (sameSrc) {
+          toUpdateSameSrc.push({ img: img, left: left, top: top });
         } else {
-          img.style.opacity = '1';
-        }
-        img.src = newSrc;
-        img.style.left = left + 'px';
-        img.style.top = top + 'px';
-        img.style.display = '';
-        if (sameSrc && img.complete && resolvedNew && img.src === resolvedNew) {
-          img.style.opacity = '1';
-          img.onload = null;
-          img.onerror = null;
+          toPreload.push({ img: img, newSrc: newSrc, left: left, top: top });
         }
       } else {
-        img.style.display = 'none';
+        toHide.push(img);
       }
     }
-    if (loadingCount === 0) showAllVisible();
-    for (var j = poolSize; j < imgPool.length; j++) {
-      imgPool[j].style.display = 'none';
+
+    function applyComposition() {
+      var pending = toPreload.length;
+      if (pending === 0) {
+        flushComposition();
+        return;
+      }
+      toPreload.forEach(function (item) {
+        var img = item.img;
+        var newSrc = item.newSrc;
+        var left = item.left;
+        var top = item.top;
+        var temp = new Image();
+        temp.onload = temp.onerror = function () {
+          img.src = newSrc;
+          img.style.left = left + 'px';
+          img.style.top = top + 'px';
+          img.style.opacity = '1';
+          img.style.display = '';
+          img.onload = null;
+          img.onerror = null;
+          pending--;
+          if (pending === 0) flushComposition();
+        };
+        temp.src = newSrc;
+      });
     }
+
+    function flushComposition() {
+      toUpdateSameSrc.forEach(function (item) {
+        item.img.style.left = item.left + 'px';
+        item.img.style.top = item.top + 'px';
+        item.img.style.opacity = '1';
+        item.img.style.display = '';
+      });
+      toHide.forEach(function (img) {
+        img.style.display = 'none';
+      });
+      for (var j = poolSize; j < imgPool.length; j++) {
+        imgPool[j].style.display = 'none';
+      }
+    }
+
+    applyComposition();
   }
 
   function onMouseMove(e) {
@@ -316,25 +314,16 @@
     }
   }
 
-  function onMobileTap(e) {
-    if (e && e.target && e.target.closest && e.target.closest('a')) return;
-    cycleComposition();
-  }
-
   function onResize() {
     lastCellId = null;
     lastRenderX = null;
     lastRenderY = null;
     if (isMobile()) {
       document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('touchstart', onMobileTap);
-      document.removeEventListener('click', onMobileTap);
       stopDesktopCycle();
       startMobileCycle();
     } else {
       stopMobileCycle();
-      document.removeEventListener('touchstart', onMobileTap);
-      document.removeEventListener('click', onMobileTap);
       stopDesktopCycle();
       document.addEventListener('mousemove', onMouseMove);
     }
@@ -360,8 +349,6 @@
         }
         if (isMobile()) {
           startMobileCycle();
-          document.addEventListener('touchstart', onMobileTap, { passive: true });
-          document.addEventListener('click', onMobileTap);
         } else {
           document.addEventListener('mousemove', onMouseMove);
         }
