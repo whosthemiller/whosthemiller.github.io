@@ -105,7 +105,7 @@
     var w = window.innerWidth;
     var h = window.innerHeight;
     if (w < PHONE_VIEWPORT_BREAKPOINT) {
-      return Math.min(w, h) / 16;
+      return Math.min(w, h) / 5;
     }
     return w < MOBILE_LAYOUT_BREAKPOINT ? MOBILE_IMG_SIZE : IMG_SIZE;
   }
